@@ -1,100 +1,108 @@
 {
-  "name": "AI Support Operations - Evaluation",
+  "name": "AI Support — Evaluation (Learning)",
   "nodes": [
     {
       "parameters": {},
-      "id": "f1b42b8c-21ac-4ec7-9321-4ad5fbc8befb",
-      "name": "Run evaluation",
+      "id": "47356228-7565-4cc8-90dc-05ae450c4525",
+      "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -176,
-        128
+        0,
+        0
       ]
     },
     {
       "parameters": {
-        "jsCode": "const samples = [[\"Our checkout is down for every customer.\", \"technical\", \"high\"], [\"All users receive 503 when logging in.\", \"technical\", \"high\"], [\"The entire website is unavailable worldwide.\", \"technical\", \"high\"], [\"Our production API is failing for all clients.\", \"technical\", \"high\"], [\"No customers can submit orders since the update.\", \"technical\", \"high\"], [\"My profile page shows an error.\", \"technical\", \"medium\"], [\"I cannot upload my avatar.\", \"technical\", \"medium\"], [\"My password reset link returns 404.\", \"technical\", \"medium\"], [\"The app crashes on my phone when opening settings.\", \"technical\", \"medium\"], [\"My export button is broken.\", \"technical\", \"medium\"], [\"I was charged twice for my subscription.\", \"billing\", \"medium\"], [\"Please refund my last payment.\", \"billing\", \"medium\"], [\"My invoice has the wrong amount.\", \"billing\", \"medium\"], [\"I was billed after canceling my plan.\", \"billing\", \"medium\"], [\"My card was declined when paying my invoice.\", \"billing\", \"medium\"], [\"I need a copy of my invoice.\", \"billing\", \"medium\"], [\"The subscription fee was incorrect.\", \"billing\", \"medium\"], [\"My refund has not arrived.\", \"billing\", \"medium\"], [\"Why did you charge my card?\", \"billing\", \"medium\"], [\"I paid but my payment is not showing.\", \"billing\", \"medium\"], [\"How do I change my account language?\", \"general\", \"low\"], [\"Where can I find your help center?\", \"general\", \"low\"], [\"Do you offer a student discount?\", \"general\", \"low\"], [\"How can I edit my display name?\", \"general\", \"low\"], [\"What are your opening hours?\", \"general\", \"low\"], [\"How do I invite a colleague?\", \"general\", \"low\"], [\"Where is the documentation?\", \"general\", \"low\"], [\"Can I change my notification preferences?\", \"general\", \"low\"], [\"How can I download the mobile app?\", \"general\", \"low\"], [\"Do you support dark mode?\", \"general\", \"low\"]];\nreturn samples.map(([message,category,priority],i)=>({json:{ticket_id:`EVAL-${Date.now()}-${i+1}`,message,source:\"evaluation\",expected_category:category,expected_priority:priority,expected_route:priority===\"high\"?\"incident_review\":{technical:\"technical_queue\",billing:\"billing_queue\",general:\"general_queue\"}[category]}}));"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const tests = [\n  { message: \"Our website is down for all users.\", category: \"technical\", priority: \"high\" },\n  { message: \"My profile picture is not uploading.\", category: \"technical\", priority: \"medium\" },\n  { message: \"I was charged twice for my subscription.\", category: \"billing\", priority: \"medium\" },\n  { message: \"My payment was declined.\", category: \"billing\", priority: \"medium\" },\n  { message: \"How can I change my password?\", category: \"general\", priority: \"low\" },\n  { message: \"Where can I find your opening hours?\", category: \"general\", priority: \"low\" }\n];\n\nconst runId = Date.now();\n\nreturn tests.map((test, index) => ({\n  json: {\n    ticket_id: `EVAL-${runId}-${index}`,\n    message: test.message,\n    expected_category: test.category,\n    expected_priority: test.priority\n  }\n}));"
       },
-      "id": "d3e7c9bc-734e-4ae5-a452-141ca1821d1e",
-      "name": "30 labelled tickets",
+      "id": "bdece0e0-0aea-4790-9a88-02e575205d7c",
+      "name": "Test Cases",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        128
+        260,
+        0
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:5678/webhook/ai-support-v2/tickets",
+        "url": "http://localhost:5678/webhook/ai-support-learning",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ticket_id:$json.ticket_id,message:$json.message,source:$json.source}) }}",
+        "jsonBody": "={{ ({ ticket_id: $json.ticket_id, message: $json.message }) }}",
         "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 120000,
           "batching": {
             "batch": {
               "batchSize": 1,
               "batchInterval": 0
             }
-          },
-          "timeout": 90000
+          }
         }
       },
-      "id": "37c9a1d7-6257-40d0-bc06-464fe730723c",
-      "name": "Call live ticket API",
+      "id": "3cff6c47-7df6-4b12-8b8c-8a77a68863e1",
+      "name": "Send Test Tickets",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        320,
-        128
-      ],
-      "onError": "continueRegularOutput"
+        520,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const expected=$('30 labelled tickets').all(); const results=$input.all();\nconst details=expected.map((x,i)=>{const e=x.json;const a=results[i]?.json||{};const matched=a.ticket_id===e.ticket_id;const c=matched&&a.category===e.expected_category;const p=matched&&a.priority===e.expected_priority;const r=matched&&a.route===e.expected_route;return {ticket_id:e.ticket_id,message:e.message,expected_category:e.expected_category,actual_category:a.category||null,expected_priority:e.expected_priority,actual_priority:a.priority||null,expected_route:e.expected_route,actual_route:a.route||null,category_correct:c,priority_correct:p,route_correct:r,passed:c&&p&&r,status:a.status||'request_failed'};});\nconst pct=k=>Math.round(1000*details.filter(d=>d[k]).length/details.length)/10;\nreturn [{json:{total:details.length,category_accuracy_percent:pct('category_correct'),priority_accuracy_percent:pct('priority_correct'),route_accuracy_percent:pct('route_correct'),all_fields_accuracy_percent:pct('passed'),manual_or_failed:details.filter(d=>d.status!=='queued').length,failures:details.filter(d=>!d.passed),details}}];"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const tests = $('Test Cases').all();\nconst responses = $input.all();\n\nlet correctCategory = 0;\nlet correctPriority = 0;\nlet fullyCorrect = 0;\nconst failures = [];\n\nfor (const item of tests) {\n  const test = item.json;\n  const response = responses.find(\n    r => r.json.body?.ticket_id === test.ticket_id\n  )?.json;\n  const actual = response?.body || {};\n\n  const success = response?.statusCode === 200 && actual.status === \"success\";\n  const categoryOK = success && actual.category === test.expected_category;\n  const priorityOK = success && actual.priority === test.expected_priority;\n\n  if (categoryOK) correctCategory++;\n  if (priorityOK) correctPriority++;\n\n  if (categoryOK && priorityOK) {\n    fullyCorrect++;\n  } else {\n    failures.push({\n      message: test.message,\n      expected_category: test.expected_category,\n      actual_category: actual.category || \"missing\",\n      expected_priority: test.expected_priority,\n      actual_priority: actual.priority || \"missing\"\n    });\n  }\n}\n\nconst total = tests.length;\n\nreturn [{\n  json: {\n    total_tests: total,\n    category_accuracy: Math.round(correctCategory / total * 100),\n    priority_accuracy: Math.round(correctPriority / total * 100),\n    overall_accuracy: Math.round(fullyCorrect / total * 100),\n    failures\n  }\n}];"
       },
-      "id": "415853ed-8917-4469-80cb-563e0c04fa7a",
-      "name": "Score predictions",
+      "id": "43746069-6637-4637-96ec-021b0aa8aaf7",
+      "name": "Score Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        576,
-        128
+        780,
+        0
       ]
     }
   ],
-  "pinData": {},
   "connections": {
-    "Run evaluation": {
+    "Manual Trigger": {
       "main": [
         [
           {
-            "node": "30 labelled tickets",
+            "node": "Test Cases",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "30 labelled tickets": {
+    "Test Cases": {
       "main": [
         [
           {
-            "node": "Call live ticket API",
+            "node": "Send Test Tickets",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Call live ticket API": {
+    "Send Test Tickets": {
       "main": [
         [
           {
-            "node": "Score predictions",
+            "node": "Score Results",
             "type": "main",
             "index": 0
           }
@@ -104,14 +112,8 @@
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "525dd4bc-5a13-472a-a6bb-798769bbb754",
-  "meta": {
-    "instanceId": "1229615d65cd4923370f57a6a8da93009250c6a0c27e63a72114ac719d1db31e"
-  },
-  "nodeGroups": [],
-  "id": "AWMgAino3Zff1ELl",
+  "pinData": {},
   "tags": []
 }
