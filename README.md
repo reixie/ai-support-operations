@@ -16,20 +16,19 @@ The workflow receives a support ticket through a webhook, validates the input, c
 
 ### 1. Main automation workflow
 
-<!-- Upload your n8n screenshot to screenshots/workflow.png, then uncomment the image line below. -->
-<!-- ![Main AI Support Operations workflow in n8n](screenshots/workflow.png) -->
+<img width="2968" height="2050" alt="image" src="https://github.com/user-attachments/assets/11edd9b7-34f0-4f05-bcd8-b514bf7cb2ee" />
 
 *The complete n8n workflow, from incoming requests to AI classification, storage, routing, and incident alerts.*
 
 ### 2. AI classification result
 
-<!-- ![AI classification output showing category, priority, and summary](screenshots/ai-classification.png) -->
+<img width="2968" height="2048" alt="image" src="https://github.com/user-attachments/assets/bf537aeb-d2f1-4030-8635-3178bd91dbf5" />
 
 *An example of a support ticket converted into structured JSON by the local AI model.*
 
 ### 3. Ticket storage
 
-<!-- ![n8n Data Table containing processed support tickets](screenshots/data-table.png) -->
+<img width="2972" height="2050" alt="image" src="https://github.com/user-attachments/assets/721c6ef3-9ea9-48b5-9c09-9f6d8ea53b98" />
 
 *Processed tickets stored in n8n Data Tables, including their category, priority, summary, and processing status.*
 
@@ -41,13 +40,13 @@ The workflow receives a support ticket through a webhook, validates the input, c
 
 ### 5. API request and response
 
-<!-- ![Terminal showing a POST request and structured JSON response](screenshots/api-response.png) -->
+<img width="2383" height="1695" alt="image" src="https://github.com/user-attachments/assets/e8ac5f52-a6db-41de-a75d-0904f781cbfd" />
 
 *A client sends a support message and receives a structured result through the webhook API.*
 
 ### 6. AI evaluation
 
-<!-- ![AI evaluation workflow and accuracy metrics](screenshots/evaluation-results.png) -->
+<img width="2966" height="2056" alt="image" src="https://github.com/user-attachments/assets/2ab7da43-e814-4da2-9d5d-f8944c395f64" />
 
 *An independent evaluation workflow compares the model's predictions with predefined expected answers.*
 
